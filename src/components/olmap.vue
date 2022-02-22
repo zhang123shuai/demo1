@@ -25,7 +25,7 @@ import VectorLayer from "ol/layer/Vector";
 import { OSM, TileWMS, Vector } from "ol/source";
 import GeoJSON from "ol/format/GeoJSON";
 import { Fill, Style, Stroke } from "ol/style";
-import Draw from "ol/interaction/Draw";
+import { DoubleClickZoom, Draw } from "ol/interaction";
 import mapconfig from "../config/mapconfig.js";
 import MousePosition from "ol/control/MousePosition";
 import { createStringXY } from "ol/coordinate";
@@ -57,6 +57,7 @@ export default {
       map: null,
       drawLayer: {},
       draw: null,
+      dblClickInteraction: null,
     };
   },
   mounted() {
@@ -153,8 +154,19 @@ export default {
         this.map.addLayer(this.drawLayer[k]);
       }
     },
+    // 删除默认的双击事件
+    deleteDoubleclick() {
+      this.dblClickInteraction = this.map
+        .getInteractions()
+        .getArray()
+        .find((interaction) => {
+          return interaction instanceof DoubleClickZoom;
+        });
+      this.map.removeInteraction(this.dblClickInteraction);
+    },
     // 开始绘制
     drawingStart(type) {
+      this.deleteDoubleclick();
       if (type == "None") {
         this.drawtool.forEach((item, i) => {
           if (item.value != "None") {
@@ -188,6 +200,10 @@ export default {
       // 获取坐标点
       const points = geo.getCoordinates();
       this.map.removeInteraction(this.draw); // 移除画笔绘制
+      // 绘制后添加 利用时间差来避免绘制结束后双击放大地图
+      setTimeout(() => {
+        this.map.addInteraction(this.dblClickInteraction);
+      }, 100);
       console.warn(points, "绘制结束，点坐标");
     },
   },
