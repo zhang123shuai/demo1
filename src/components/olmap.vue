@@ -1,12 +1,15 @@
 <template>
   <div class="warp">
-    <div id="map" ref="rootmap"></div>
+    <div id="map" ref="rootmap">
+      <!-- 坐标展示位置div -->
+      <div id="mouse_position"></div>
+    </div>
     <div class="drawselect">
       <el-button
         v-for="(item, i) in drawtool"
         :key="i"
         :type="item.value == 'None' ? 'danger' : 'primary'"
-        @click="drawStart(item.value)"
+        @click="drawingStart(item.value)"
         round
         >{{ item.label }}</el-button
       >
@@ -24,6 +27,8 @@ import GeoJSON from "ol/format/GeoJSON";
 import { Fill, Style, Stroke } from "ol/style";
 import Draw from "ol/interaction/Draw";
 import mapconfig from "../config/mapconfig.js";
+import MousePosition from "ol/control/MousePosition";
+import { createStringXY } from "ol/coordinate";
 export default {
   data() {
     return {
@@ -56,6 +61,7 @@ export default {
   },
   mounted() {
     this.initMap();
+    this.initMouse();
     this.loopLayer();
   },
   methods: {
@@ -72,6 +78,17 @@ export default {
         }),
       });
     },
+    //加入鼠标当前坐标事件
+    initMouse() {
+      var mousePositionControl = new MousePosition({
+        coordinateFormat: createStringXY(6), //获取位置
+        projection: "EPSG:4326",
+        className: "custom-mouse-position",
+        target: document.getElementById("mouse_position"), //将位置数据放到那里
+        undefinedHTML: "&nbsp",
+      });
+      this.map.addControl(mousePositionControl);
+    },
     // 初始化工具图层
     loopLayer() {
       // 将图形的数据层包上一层图层放入地图
@@ -79,13 +96,13 @@ export default {
       this.drawLayer.Point = new VectorLayer({
         source: new Vector({ wrapX: false }),
         zIndex: 9,
-        style: new Style({
-          // 设置线颜色\宽度
-          stroke: new Stroke({
-            width: 4,
-            color: "#119aff",
-          }),
-        }),
+        // style: new Style({
+        //   // 设置线颜色\宽度
+        //   stroke: new Stroke({
+        //     width: 4,
+        //     color: "#119aff",
+        //   }),
+        // }),
       });
       // 线层 样式
       this.drawLayer.LineString = new VectorLayer({
@@ -137,7 +154,7 @@ export default {
       }
     },
     // 开始绘制
-    drawStart(type) {
+    drawingStart(type) {
       if (type == "None") {
         this.drawtool.forEach((item, i) => {
           if (item.value != "None") {
@@ -182,6 +199,16 @@ export default {
   height: 100%;
   #map {
     height: 100%;
+    #mouse_position {
+      color: #fff;
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      z-index: 10000000;
+      width: 200px;
+      line-height: 30px;
+      background: rgba(0, 0, 0, 0.5);
+    }
   }
   .drawselect {
     position: fixed;
