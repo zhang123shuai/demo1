@@ -21,7 +21,7 @@ import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import { OSM, TileWMS, Vector } from "ol/source";
 import GeoJSON from "ol/format/GeoJSON";
-import { Style, Stroke } from "ol/style";
+import { Fill, Style, Stroke } from "ol/style";
 import Draw from "ol/interaction/Draw";
 import mapconfig from "../config/mapconfig.js";
 export default {
@@ -40,14 +40,14 @@ export default {
           value: "Polygon",
           label: "多边形",
         },
-        // {
-        //   value: "Circle",
-        //   label: "圆",
-        // },
-        // {
-        //   value: "None",
-        //   label: "清除",
-        // },
+        {
+          value: "Circle",
+          label: "圆",
+        },
+        {
+          value: "None",
+          label: "清除",
+        },
       ],
       map: null,
       drawLayer: {},
@@ -55,26 +55,23 @@ export default {
     };
   },
   mounted() {
-    var mapcontainer = this.$refs.rootmap;
-    this.map = new Map({
-      target: mapcontainer,
-      layers: mapconfig.streetmap(),
-      view: new View({
-        projection: "EPSG:4326", //使用这个坐标系
-        center: [mapconfig.x, mapconfig.y], //深圳
-        zoom: mapconfig.zoom,
-      }),
-    });
+    this.initMap();
     this.loopLayer();
-    // // 添加一个绘制的线使用的layer
-    // this.drawLayer = new VectorLayer({
-    //   //layer所对应的source
-    //   source: new Vector(),
-    // });
-    // //把layer加入到地图中
-    // this.map.addLayer(this.drawLayer);
   },
   methods: {
+    // 初始化地图
+    initMap() {
+      var mapcontainer = this.$refs.rootmap;
+      this.map = new Map({
+        target: mapcontainer,
+        layers: mapconfig.streetmap(),
+        view: new View({
+          projection: "EPSG:4326", //使用这个坐标系
+          center: [mapconfig.x, mapconfig.y], //深圳
+          zoom: mapconfig.zoom,
+        }),
+      });
+    },
     // 初始化工具图层
     loopLayer() {
       // 将图形的数据层包上一层图层放入地图
@@ -83,9 +80,10 @@ export default {
         source: new Vector({ wrapX: false }),
         zIndex: 9,
         style: new Style({
+          // 设置线颜色\宽度
           stroke: new Stroke({
-            color: "blue",
-            width: 3,
+            width: 4,
+            color: "#119aff",
           }),
         }),
       });
@@ -112,9 +110,25 @@ export default {
             color: "#119aff",
           }),
           // 图形区域内颜色
-          // fill: new Fill({
-          //   color: "rgba(57,160,255,0.5)",
-          // }),
+          fill: new Fill({
+            color: "rgba(57,160,255,0.5)",
+          }),
+        }),
+      });
+      // 圆 样式
+      this.drawLayer.Circle = new VectorLayer({
+        source: new Vector({ wrapX: false }),
+        zIndex: 9,
+        style: new Style({
+          // 设置线颜色\宽度
+          stroke: new Stroke({
+            width: 4,
+            color: "#119aff",
+          }),
+          // 图形区域内颜色
+          fill: new Fill({
+            color: "rgba(57,160,255,0.5)",
+          }),
         }),
       });
       // 点线面图层放入地图盒子
@@ -125,18 +139,22 @@ export default {
     // 开始绘制
     drawStart(type) {
       if (type == "None") {
-        // this.drawLayer[type].getSource().clear();
+        this.drawtool.forEach((item, i) => {
+          if (item.value != "None") {
+            this.drawLayer[item.value].getSource().clear();
+          }
+        });
       } else {
         let that = this;
         this.draw = new Draw({
           source: this.drawLayer[type].getSource(),
           type: type,
-          style: new Style({
-            stroke: new Stroke({
-              color: "blue",
-              width: 3,
-            }),
-          }),
+          // style: new Style({
+          //   stroke: new Stroke({
+          //     color: "blue",
+          //     width: 3,
+          //   }),
+          // }),
         });
         this.map.addInteraction(this.draw);
         this.draw.on("drawend", (evt) => {
@@ -152,7 +170,7 @@ export default {
       console.log(t, "所画形状");
       // 获取坐标点
       const points = geo.getCoordinates();
-      this.map.removeInteraction(this.draw); // 移除绘制
+      this.map.removeInteraction(this.draw); // 移除画笔绘制
       console.warn(points, "绘制结束，点坐标");
     },
   },
